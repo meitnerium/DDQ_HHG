@@ -253,6 +253,7 @@ delr=(xmax-xmin)/(npos-1)
             xmu_chi2(i,j)=xmu12(j)*chi1(j)  !initialiser xmu_chi2(i,:)
             proj(j)=dconjg(chi1(j))*xmu_chi1(i,j)+dconjg(chi2(j))*xmu_chi2(i,j)
            enddo
+	       !TODO: TO BE VERIFIED
                call simpson(npos,delr,proj,tmpreal)
                proj_xmu_chi(i)=dcmplx(tmpreal,0.d0)
 !!!!!!!!!!!!!!! BOUCLE de t(i) à t(1)=t0 
