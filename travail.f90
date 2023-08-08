@@ -12,9 +12,9 @@ double precision, allocatable :: pot(:,:), x(:), ep(:,:)
 double precision, allocatable :: xmu12(:),HHG(:),HHG_simple_v(:)
 double precision :: xmin, xmax, requ, diss,massreduite, morse,lieprobv, temp_omega, domega
 double precision :: work1(npos),table1(npos),normedeb, champ(ntps),e0,rc0
-double precision :: tablea(npos),worka(npos),projreal, projimag, lieprob 
+double precision :: tablea(npos),worka(npos),projreal, projimag, projreal_HHG, projimag_HHG,lieprob 
 double complex :: chi1(npos), chi2(npos),cun,cim,cnul,zetdt(npos),ctemp(npos),chilie(npos),chi1init(npos)
-double precision :: alpha,delr,p0,rdeb,proj(npos) ,xmue,auto_correl(ntps), tmpreal
+double precision :: alpha,delr,p0,rdeb,proj(npos) ,proj_R(npos), proj_I(npos), xmue,auto_correl(ntps), tmpreal
 double precision :: t(ntps),delt,t0,tf,pi,omega,freq,phase, dtper, norme,periode,delta,vp1(npos),vp2(npos),sigma,tmax,rmoyen(ntps),rmoyenlie(ntps),rclapet1(ntps),rclapet2(ntps)
 real,dimension(npos-ideb) :: vp1reel,vp2reel
 ! 
@@ -251,10 +251,12 @@ delr=(xmax-xmin)/(npos-1)
            do j=1,npos
             xmu_chi1(i,j)=xmu12(j)*chi2(j) !initialiser xmu_chi1(i,:)
             xmu_chi2(i,j)=xmu12(j)*chi1(j)  !initialiser xmu_chi2(i,:)
-            proj(j)=dconjg(chi1(j))*xmu_chi1(i,j)+dconjg(chi2(j))*xmu_chi2(i,j)
+            ctemp(j)= dconjg(chi1(j))*xmu_chi1(i,j)+dconjg(chi2(j))*xmu_chi2(i,j) 
+!            proj_R(j)=dreal(ctemp(j) )
            enddo
-               call simpson(npos,delr,proj,tmpreal)
-               proj_xmu_chi(i)=dcmplx(tmpreal,0.d0)
+               call simpson(npos,delr,dreal(ctemp),projreal_HHG)
+                call simpson(npos,delr,dimag(ctemp),projimag_HHG)
+               proj_xmu_chi(i)=dcmplx(projreal_HHG,projimag_HHG)
 !!!!!!!!!!!!!!! BOUCLE de t(i) à t(1)=t0 
          do ii=i,1,-1
 	   call splitop(xmu_chi1(i,:), xmu_chi1(i,:), zetdt,pot(1,:),pot(2,:),xmu12, npos, champ(ii), delr, massreduite, -delt)! (back-) propagation de xmu_chi1 et  xmu_chi1
@@ -291,22 +293,22 @@ delr=(xmax-xmin)/(npos-1)
 !********************************************************************
 !	    Calcul du spectre `HHG`: A TRAVAILLER 
 !********************************************************************
-domega= 2.d0*pi/delt
+domega= 2.d0*pi/(1024*delt)
 open(unit=1010,name="HHG.dat",status='replace') 
 call fourier(proj_xmu_chi,1024,1,delt,domega)
 !! ATTENTION: Il faut replacer les elements du vecteur-resultat de cette FT
-HHG_simple_v=proj_xmu_chi
+HHG_simple_v=cdabs(proj_xmu_chi)**2
 do j = 1, npos	
      call fourier(xmu_chi1(:,j),1024,1,delt,domega)	
      call fourier(xmu_chi2(:,j),1024,1,delt,domega)
-	proj_HHG(:,j)=dconjg(xmu_chi1(:,j))*xmu_chi1(:,j)+dconjg(xmu_chi2(:,j))*xmu_chi2(:,j)
+	proj_HHG(:,j)=cdabs(xmu_chi1(:,j))**2+cdabs(xmu_chi2(:,j))**2
 enddo
 do i=1,1024
  !
          if(i.le.512)then
-            temp_omega  = (1-1) * domega
+            temp_omega  = (i-1) * domega! ( (i-1)+514 )* domega
          else
-             temp_omega  = -(1024-i+1) * domega
+             temp_omega  = (-(512-i+1)+1024) * domega !( -(512-i)+1 )* domega
          endif
 	   call simpson(npos,delr,proj_HHG(i,:),HHG(i))  !!! ATTENTION: Il faut replacer les elements du vecteur-resultat des FT s
  !	    	Écriture  du spectre `HHG` (version longue et version simplifiée) dans un fichier.
@@ -399,5 +401,4 @@ SUBROUTINE simpson (N,H,FI,S)
   IF (MOD(N,2).EQ.0) S = S &
      +H*(5.0*FI(N)+8.0*FI(N-1)-FI(N-2))/12.0
 END SUBROUTINE simpson
-
 

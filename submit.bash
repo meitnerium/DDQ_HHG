@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH -t 0-12:00
+#SBATCH -t 0-02:00
 #SBATCH -c 1
 
 make

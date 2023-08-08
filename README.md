@@ -1,2 +1,0 @@
-# DDQ_HHG
-DDQ HHG
