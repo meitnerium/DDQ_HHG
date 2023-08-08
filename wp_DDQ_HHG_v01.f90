@@ -68,7 +68,7 @@ allocate (xmu12(npos)) !moment dipolaire de H2+
 allocate (pot(2,npos)) ! 2 potentiels
 allocate (ep(0:v,npos)) !les etats propres vont de 0 à v
 !
-allocate (proj_xmu_chi(1024), proj_xmu_chi_big(nt_hhg)
+allocate (proj_xmu_chi(1024), proj_xmu_chi_big(nt_hhg))
 allocate (proj_HHG(nt_hhg,npos))
 allocate (xmu_chi1(npos), xmu_chi1_big(nt_hhg,npos))! xmu_chi1(t_n,R_K) sur  grille de 1024 temps utilisee pour calcul du spectre HHG
 allocate (xmu_chi2(npos), xmu_chi2_big(nt_hhg,npos))! xmu_chi1(t_n,R_K) sur  grille de 1024 temps utilisee pour calcul du spectre HHG
@@ -194,7 +194,8 @@ delr=(xmax-xmin)/(npos-1)
 			chilie(j)=chilie(j)+ep(n,j)*(normedeb+cim*norme)
 		enddo
 		worka(j)=x(j)*(cdabs(chilie(j)))**2
-		tablea(j)=(cdabs(chilie(j)))**2nt_hhg=np_hhg*1024
+		tablea(j)=(cdabs(chilie(j)))**2
+                !nt_hhg=np_hhg*1024
 	enddo
 	
 	call simpson(npos,delr,worka,normedeb)
@@ -257,11 +258,11 @@ delr=(xmax-xmin)/(npos-1)
 !!!!!!!!!!	
 !!!!!!!!!!!!!!  Calcul du spectre HHG: initialisation des tableaux pour FFT 
 !!!
-xmu_chi1=dcomplx(0.d0, 0.d0)
-xmu_chi2=dcomplx(0.d0, 0.d0)
-xmu_chi1_big=dcomplx(0.d0, 0.d0)
-xmu_chi2_big=dcomplx(0.d0, 0.d0)
-proj_xmu_chi_big=dcomplx(0.d0, 0.d0)
+xmu_chi1=dcmplx(0.d0, 0.d0)
+xmu_chi2=dcmplx(0.d0, 0.d0)
+xmu_chi1_big=dcmplx(0.d0, 0.d0)
+xmu_chi2_big=dcmplx(0.d0, 0.d0)
+proj_xmu_chi_big=dcmplx(0.d0, 0.d0)
 !!!!!!!!!!!!!!
        if(i.le.1024) then
            do j=1,npos

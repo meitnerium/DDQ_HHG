@@ -3,4 +3,4 @@
 #SBATCH -c 1
 
 make
-time ./travail
+time ./wp_DDQ_HHG_v01
