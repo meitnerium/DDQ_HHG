@@ -3,4 +3,4 @@
 #SBATCH -c 1
 
 make
-time ./wp_DDQ_HHG_v01
+time /home/jnicolas/projects/def-fdion/DDQ/DDQ_HHG_pull_2003-08-07/wp_DDQ_HHG_v01

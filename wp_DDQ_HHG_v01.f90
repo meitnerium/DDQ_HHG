@@ -9,25 +9,53 @@ integer :: npos,ntps, n,v,i,j,l,ph,m, maxpot1,minpot2,ideb,ii
 integer :: np_hhg,nt_hhg ! parametres pour ajuster grille FFT dans le calcul HHG
 !!!!!!!!! np_hhg devrait etre une puissance entiere de 2. nt_hhg=np_hhg*1024
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+INTEGER::nt_opcyc,nonFC
 
 
 !npos pour la grille de position et d'impulsion, ntps pour la grille de temps
 
-parameter (npos=512, ntps=24000,ideb=85,np_hhg=8)
+!parameter (npos=512, ntps=24000,ideb=85,np_hhg=2)
 double precision, allocatable :: pot(:,:), x(:), ep(:,:)
 double precision, allocatable :: xmu12(:),HHG(:),HHG_simple_v(:)
 double precision :: xmin, xmax, requ, diss,massreduite, morse,lieprobv, temp_omega, domega
-double precision :: work1(npos),table1(npos),normedeb, champ(ntps),e0,rc0
-double precision :: tablea(npos),worka(npos),projreal, projimag, projreal_HHG, projimag_HHG,lieprob 
-double complex :: chi1(npos), chi2(npos),cun,cim,cnul,zetdt(npos),ctemp(npos),chilie(npos),chi1init(npos)
-double precision :: alpha,delr,p0,rdeb,proj(npos) ,proj_R(npos), proj_I(npos), xmue,auto_correl(ntps), tmpreal
-double precision :: t(ntps),delt,t0,tf,pi,omega,freq,phase, dtper, norme,periode,delta,vp1(npos),vp2(npos),sigma,tmax,rmoyen(ntps),rmoyenlie(ntps),rclapet1(ntps),rclapet2(ntps)
-real,dimension(npos-ideb) :: vp1reel,vp2reel
+!double precision :: work1(npos),table1(npos),normedeb, champ(ntps),e0,rc0
+!double precision :: tablea(npos),worka(npos),projreal, projimag, projreal_HHG, projimag_HHG,lieprob 
+!double complex :: chi1(npos), chi2(npos),cun,cim,cnul,zetdt(npos),ctemp(npos),chilie(npos),chi1init(npos)
+!double precision :: alpha,delr,p0,rdeb,proj(npos) ,proj_R(npos), proj_I(npos), xmue,auto_correl(ntps), tmpreal
+!double precision :: t(ntps),delt,t0,tf,pi,omega,freq,phase, dtper, norme,periode,delta,vp1(npos),vp2(npos),sigma,tmax,rmoyen(ntps),rmoyenlie(ntps),rclapet1(ntps),rclapet2(ntps)
+DOUBLE PRECISION::normedeb,e0,rc0,projreal,projimag,projreal_HHG,projimag_HHG,lieprob,alpha,delr,p0,rdeb,xmue,tmpreal,delt,t0,tf,pi,omega,freq,phase,dtper,norme,periode,delta,sigma,tmax,fph
+DOUBLE PRECISION::c00,c01,c02,c03,c04,c05,c06,c07,c08,c09,c10,c11,c12,c13,c14,c15,c16,c17,c18
+DOUBLE PRECISION,ALLOCATABLE::work1(:),table1(:),champ(:),tablea(:),worka(:),proj(:),proj_R(:),proj_I(:),auto_correl(:),t(:),vp1(:),vp2(:),rmoyen(:),rmoyenlie(:),rclapet1(:),rclapet2(:)
+DOUBLE COMPLEX::cun,cim,cnul
+DOUBLE COMPLEX,ALLOCATABLE::chi1(:),chi2(:),zetdt(:),ctemp(:),chilie(:),chi1init(:)
+!real,dimension(npos-ideb) :: vp1reel,vp2reel
+REAL,DIMENSION(:),ALLOCATABLE::vp1reel,vp2reel,ck
 ! 
 !
 double complex, allocatable ::xmu_chi1(:),xmu_chi2(:),proj_xmu_chi(:)
 double complex, allocatable ::xmu_chi1_big(:,:),xmu_chi2_big(:,:),proj_xmu_chi_big(:)
 double precision, allocatable :: proj_HHG(:,:)    ! pour calcul du spectre HHG
+
+
+!***********************************************************************
+!               Lire fichier input et allouer dimensions
+!***********************************************************************
+
+  NAMELIST/xGrid/npos,xmin,xmax,ideb,rc0,p0,alpha
+  NAMELIST/tGrid/nt_opcyc,ntps,np_hhg
+  NAMELIST/fieldParameters/t0,e0,freq,fph
+  NAMELIST/initialEigenstates/nonFC,c00,c01,c02,c03,c04,c05,c06,c07,c08,c09,c10,c11,c12,c13,c14,c15,c16,c17,c18
+  OPEN(100,FILE='input')
+  READ(100,NML=xGrid)
+  READ(100,NML=tGrid)
+  READ(100,NML=fieldParameters)
+  READ(100,NML=initialEigenstates)
+  CLOSE(100)
+
+  ALLOCATE(work1(npos),table1(npos), champ(ntps),tablea(npos),worka(npos),chi1(npos),chi2(npos),zetdt(npos),ctemp(npos),chilie(npos),chi1init(npos),proj(npos) ,proj_R(npos),  proj_I(npos),auto_correl(ntps),t(ntps),vp1(npos),vp2(npos),rmoyen(ntps),rmoyenlie(ntps),rclapet1(ntps),rclapet2(ntps),vp1reel(npos-ideb),vp2reel(npos-ideb),ck(19))
+
+
+
 !
 !***********************************************************************
 !         Valeurs des paramètres, allocation des variables
@@ -43,38 +71,58 @@ requ=2.d0 !valeur de r à l'equilibre = 2*a0 (a0=1 en u.a)
 diss=2.7925d0/27.2d0 !potentiel de dissociation de H2+
 massreduite=918.0762887608628d0 !=masse proton/2 en u.a
 v=18 !donne 19 niveaux vibrationnels en partant de v=0
-xmin=2.d-3 
-xmax=30.d0
+!xmin=2.d-3 
+!xmax=30.d0
 rdeb = xmin !paramètre pour la construction de chi1 et chi2
-rc0 = 1.3989d0 !position du paquet d'onde à t0
-p0 = 0.0d0 !impulsion du paquet d'onde à t0
-alpha = 13.019d0 !paramètre pour chi1 et chi2
-t0=0d0
-e0 = 3.77d-2!racine carrée de l'intensité du champ
+!rc0 = 1.3989d0 !position du paquet d'onde à t0
+!p0 = 0.0d0 !impulsion du paquet d'onde à t0
+!alpha = 13.019d0 !paramètre pour chi1 et chi2
+!t0=0d0
+!e0 = 3.77d-2!racine carrée de l'intensité du champ
 
-freq = 4.3d-3 !fréquence du champ
+!freq = 4.3d-3 !fréquence du champ
 !freq=freq/1.25d0
 
 periode=2*pi/freq
 !tf=13*periode
-delt=periode/(1024) ! grille de 1024 temps utilisee pour calcul du spectre HHG. Ceci definit ici delt
+delt=periode/(nt_opcyc) ! grille de 1024 temps utilisee pour calcul du spectre HHG. Ceci definit ici delt
 tf=t0+delt*ntps
 !delt=(tf-t0)/(ntps) 
 write(*,*) 'tf= ',tf,'delt =',delt
-nt_hhg=np_hhg*1024
+nt_hhg=np_hhg*nt_opcyc
 
 allocate (x(npos))
 allocate (xmu12(npos)) !moment dipolaire de H2+
 allocate (pot(2,npos)) ! 2 potentiels
 allocate (ep(0:v,npos)) !les etats propres vont de 0 à v
 !
-allocate (proj_xmu_chi(1024), proj_xmu_chi_big(nt_hhg))
+allocate (proj_xmu_chi(nt_opcyc), proj_xmu_chi_big(nt_hhg))
 allocate (proj_HHG(nt_hhg,npos))
 allocate (xmu_chi1(npos), xmu_chi1_big(nt_hhg,npos))! xmu_chi1(t_n,R_K) sur  grille de 1024 temps utilisee pour calcul du spectre HHG
 allocate (xmu_chi2(npos), xmu_chi2_big(nt_hhg,npos))! xmu_chi1(t_n,R_K) sur  grille de 1024 temps utilisee pour calcul du spectre HHG
 allocate (HHG(nt_hhg))
 allocate (HHG_simple_v(nt_hhg))
 !
+  ck(1)=c00
+  ck(2)=c01
+  ck(3)=c02
+  ck(4)=c03
+  ck(5)=c04
+  ck(6)=c05
+  ck(7)=c06
+  ck(8)=c07
+  ck(9)=c08
+  ck(10)=c09
+  ck(11)=c10
+  ck(12)=c11
+  ck(13)=c12
+  ck(14)=c13
+  ck(15)=c14
+  ck(16)=c15
+  ck(17)=c16
+  ck(18)=c17
+  ck(19)=c18
+
 
 !***********************************************************************
 ! Mise en place de la grille des positions, potentiels de Morse et
@@ -125,14 +173,22 @@ delr=(xmax-xmin)/(npos-1)
 !***********************************************************************
 
 !do ph=0,1
-!ph=0
+ph=0
 	m=0 
-	phase=ph*pi/2d0 !calcul pour 2 phases, 0 et pi/2
+!	phase=ph*pi/2d0 !calcul pour 2 phases, 0 et pi/2
+  phase=fph*2.E0*pi
+  IF(nonFC.EQ.0)THEN
  call eval(chi1, chi2, delr, rdeb, p0, rc0, alpha, npos)
- !do l=1,npos
+  ELSEIF(nonFC.EQ.1)THEN
+ do l=1,npos
 !	chi1(l)=dcmplx(ep(0,l),0d0)
-!	chi2(l)=dcmplx(0d0,0d0)
-! enddo
+    chi1(l)=dcmplx(0d0,0d0)
+    DO j=1,v
+      chi1(l)=chi1(l)+ck(j)*dcmplx(ep(j-1,l),0d0)
+    ENDDO
+	chi2(l)=dcmplx(0d0,0d0)
+ enddo
+  ENDIF
  do j=1,npos
 	chi1init(j)=chi1(j)
  enddo
@@ -173,6 +229,10 @@ delr=(xmax-xmin)/(npos-1)
 !********************************************************************
 !	Application du split operator-Ouverture de la boucle temps 
 !********************************************************************
+
+xmu_chi1_big=dcmplx(0.d0, 0.d0)
+xmu_chi2_big=dcmplx(0.d0, 0.d0)
+proj_xmu_chi_big=dcmplx(0.d0, 0.d0)
 
  do i=1,ntps 
  write(*,*)'t = ',t(i),' u.a',' phase = ',ph
@@ -260,11 +320,11 @@ delr=(xmax-xmin)/(npos-1)
 !!!
 xmu_chi1=dcmplx(0.d0, 0.d0)
 xmu_chi2=dcmplx(0.d0, 0.d0)
-xmu_chi1_big=dcmplx(0.d0, 0.d0)
-xmu_chi2_big=dcmplx(0.d0, 0.d0)
-proj_xmu_chi_big=dcmplx(0.d0, 0.d0)
+!xmu_chi1_big=dcmplx(0.d0, 0.d0)
+!xmu_chi2_big=dcmplx(0.d0, 0.d0)
+!proj_xmu_chi_big=dcmplx(0.d0, 0.d0)
 !!!!!!!!!!!!!!
-       if(i.le.1024) then
+       if(i.le.nt_opcyc) then
            do j=1,npos
             xmu_chi1(j)=xmu12(j)*chi2(j) !initialiser xmu_chi1(i,:)
             xmu_chi2(j)=xmu12(j)*chi1(j)  !initialiser xmu_chi2(i,:)
@@ -273,13 +333,13 @@ proj_xmu_chi_big=dcmplx(0.d0, 0.d0)
            enddo
                call simpson(npos,delr,dreal(ctemp),projreal_HHG)
                 call simpson(npos,delr,dimag(ctemp),projimag_HHG)
-               proj_xmu_chi_big(i+1024)=dcmplx(projreal_HHG,projimag_HHG)
+               proj_xmu_chi_big(i+nt_opcyc)=dcmplx(projreal_HHG,projimag_HHG)
 !!!!!!!!!!!!!!! BOUCLE de t(i) à t(1)=t0 
          do ii=i,1,-1
 	   call splitop(xmu_chi1, xmu_chi1, zetdt,pot(1,:),pot(2,:),xmu12, npos, champ(ii), delr, massreduite, -delt)! (back-) propagation de xmu_chi1 et  xmu_chi1
          enddo
-         xmu_chi1_big(i+1024,:)=xmu_chi1 
-         xmu_chi2_big(i+1024,:)=xmu_chi2 
+         xmu_chi1_big(i+nt_opcyc,:)=xmu_chi1 
+         xmu_chi2_big(i+nt_opcyc,:)=xmu_chi2 
        endif
 !!!!!!!!!!!!!!
 
@@ -323,13 +383,15 @@ do j = 1, npos
 	proj_HHG(:,j)=cdabs(xmu_chi1_big(:,j))**2+cdabs(xmu_chi2_big(:,j))**2
 enddo
 do i=1,nt_hhg/2
+!do i=1,2048
  !
-            temp_omega  = (i-1) * domega 
+            temp_omega  = (i-1) * domega/freq 
 	   call simpson(npos,delr,proj_HHG(i,:),HHG(i))  !!! ATTENTION: Il faut replacer les elements du vecteur-resultat des FT s
  !	    	Écriture  du spectre `HHG` (version longue et version simplifiée) dans un fichier.
 	  write(1010,*)temp_omega ,HHG(i),HHG_simple_v(i)
  enddo
   close(1010)
+
 
 end program travail
 
