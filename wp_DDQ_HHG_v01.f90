@@ -24,16 +24,17 @@ double precision :: xmin, xmax, requ, diss,massreduite, morse,lieprobv, temp_ome
 !double precision :: alpha,delr,p0,rdeb,proj(npos) ,proj_R(npos), proj_I(npos), xmue,auto_correl(ntps), tmpreal
 !double precision :: t(ntps),delt,t0,tf,pi,omega,freq,phase, dtper, norme,periode,delta,vp1(npos),vp2(npos),sigma,tmax,rmoyen(ntps),rmoyenlie(ntps),rclapet1(ntps),rclapet2(ntps)
 DOUBLE PRECISION::normedeb,e0,rc0,projreal,projimag,projreal_HHG,projimag_HHG,lieprob,alpha,delr,p0,rdeb,xmue,tmpreal,delt,t0,tf,pi,omega,freq,phase,dtper,norme,periode,delta,sigma,tmax,fph
-DOUBLE PRECISION::c00,c01,c02,c03,c04,c05,c06,c07,c08,c09,c10,c11,c12,c13,c14,c15,c16,c17,c18
 DOUBLE PRECISION,ALLOCATABLE::work1(:),table1(:),champ(:),tablea(:),worka(:),proj(:),proj_R(:),proj_I(:),auto_correl(:),t(:),vp1(:),vp2(:),rmoyen(:),rmoyenlie(:),rclapet1(:),rclapet2(:)
 DOUBLE COMPLEX::cun,cim,cnul
+  DOUBLE COMPLEX::c00,c01,c02,c03,c04,c05,c06,c07,c08,c09,c10,c11,c12,c13,c14,c15,c16,c17,c18
 DOUBLE COMPLEX,ALLOCATABLE::chi1(:),chi2(:),zetdt(:),ctemp(:),chilie(:),chi1init(:)
 !real,dimension(npos-ideb) :: vp1reel,vp2reel
-REAL,DIMENSION(:),ALLOCATABLE::vp1reel,vp2reel,ck
+REAL,DIMENSION(:),ALLOCATABLE::vp1reel,vp2reel
 ! 
 !
 double complex, allocatable ::xmu_chi1(:),xmu_chi2(:),proj_xmu_chi(:)
 double complex, allocatable ::xmu_chi1_big(:,:),xmu_chi2_big(:,:),proj_xmu_chi_big(:)
+  DOUBLE COMPLEX,DIMENSION(:),ALLOCATABLE::ck
 double precision, allocatable :: proj_HHG(:,:)    ! pour calcul du spectre HHG
 
 
@@ -382,14 +383,23 @@ do j = 1, npos
      call fourier(xmu_chi2_big(:,j),nt_hhg,1,delt,domega)
 	proj_HHG(:,j)=cdabs(xmu_chi1_big(:,j))**2+cdabs(xmu_chi2_big(:,j))**2
 enddo
-do i=1,nt_hhg/2
-!do i=1,2048
- !
-            temp_omega  = (i-1) * domega/freq 
-	   call simpson(npos,delr,proj_HHG(i,:),HHG(i))  !!! ATTENTION: Il faut replacer les elements du vecteur-resultat des FT s
- !	    	Écriture  du spectre `HHG` (version longue et version simplifiée) dans un fichier.
-	  write(1010,*)temp_omega ,HHG(i),HHG_simple_v(i)
- enddo
+
+  DO i=1,nt_hhg
+    CALL simpson(npos,delr,proj_HHG(i,:),HHG(i))
+    IF(i.LE.(nt_hhg/2))THEN
+      HHG(i)=(HHG(i)+HHG(nt_hhg-i))/2.D0
+      HHG_simple_v(i)=(HHG_simple_v(i)+HHG_simple_v(nt_hhg-i))/2.D0
+    ENDIF
+  ENDDO
+
+ do i=1,nt_hhg/2
+ !do i=1,2048
+  !
+             temp_omega  = (i-1) * domega/freq 
+!JN  	   call simpson(npos,delr,proj_HHG(i,:),HHG(i))  !!! ATTENTION: Il faut replacer les elements du vecteur-resultat des FT s
+  !	    	Écriture  du spectre `HHG` (version longue et version simplifiée) dans un fichier.
+ 	  write(1010,*)temp_omega ,HHG(i),HHG_simple_v(i)
+  enddo
   close(1010)
 
 

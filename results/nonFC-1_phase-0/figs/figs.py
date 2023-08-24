@@ -27,11 +27,34 @@ plt.close()
 """
 
 #LOG PLOTS
-plt.semilogy(x,y1,label='Single Atom')
-plt.semilogy(x,y2,label='Many Atoms')
+#SINGLE ATOM
+plt.semilogy(x,y1,color='C0')
 plt.xlim(np.min(x),np.max(x))
 plt.grid()
-plt.legend()
+#plt.legend()
+#plt.title(r'Single Atom Logarithmic HHG Spectra')
+plt.xlabel(r'$\omega\ (\omega_0)$')
+plt.ylabel(r'$P$')
+plt.tight_layout()
+plt.savefig('hhg_log_SA.png')
+plt.close()
+#MANY ATOMS
+plt.semilogy(x,y2,color='C1')
+plt.xlim(np.min(x),np.max(x))
+plt.grid()
+#plt.legend()
+#plt.title(r'Many Atoms Logarithmic HHG Spectra')
+plt.xlabel(r'$\omega\ (\omega_0)$')
+plt.ylabel(r'$P$')
+plt.tight_layout()
+plt.savefig('hhg_log_MA.png')
+plt.close()
+#2 METHODS
+plt.semilogy(x,y1,color='C0',label='Single Atom')
+plt.semilogy(x,y2,color='C1',label='Many Atoms')
+plt.xlim(np.min(x),np.max(x))
+plt.grid()
+#plt.legend()
 #plt.title(r'Logarithmic HHG Spectra')
 plt.xlabel(r'$\omega\ (\omega_0)$')
 plt.ylabel(r'$P$')
@@ -39,6 +62,7 @@ plt.tight_layout()
 plt.savefig('hhg_log.png')
 plt.close()
 
+"""
 ### POPULATIONS ###
 
 #GET DATA
@@ -85,3 +109,4 @@ plt.ylabel(r'$R\ (a_0)$')
 plt.tight_layout()
 plt.savefig('rmoy.png')
 plt.close()
+"""
