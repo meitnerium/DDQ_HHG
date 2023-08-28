@@ -384,22 +384,49 @@ do j = 1, npos
 	proj_HHG(:,j)=cdabs(xmu_chi1_big(:,j))**2+cdabs(xmu_chi2_big(:,j))**2
 enddo
 
-  DO i=1,nt_hhg
-    CALL simpson(npos,delr,proj_HHG(i,:),HHG(i))
-    IF(i.LE.(nt_hhg/2))THEN
-      HHG(i)=(HHG(i)+HHG(nt_hhg-i))/2.D0
-      HHG_simple_v(i)=(HHG_simple_v(i)+HHG_simple_v(nt_hhg-i))/2.D0
-    ENDIF
-  ENDDO
 
- do i=1,nt_hhg/2
+
+
+
+
+do i=1,nt_hhg
+     call simpson(npos,delr,proj_HHG(i,:),HHG(i))
+
+enddo
+
+do i=1,nt_hhg/2
+
+     HHG(i)=(HHG(i)+HHG(nt_hhg-i))/2.d0
+     HHG_simple_v(i)=(HHG_simple_v(i)+HHG_simple_v(nt_hhg-i))/2.d0
+            temp_omega  = (i-1) * domega/freq
+
+ !	    	Écriture  du spectre HHG (version longue et version simplifiée) dans un fichier.
+	  write(1010,*)temp_omega ,HHG(i),HHG_simple_v(i)
+ enddo
+
+
+
+
+
+
+
+
+!  DO i=1,nt_hhg
+!    CALL simpson(npos,delr,proj_HHG(i,:),HHG(i))
+!    IF(i.LE.(nt_hhg/2))THEN
+!      HHG(i)=(HHG(i)+HHG(nt_hhg-i))/2.D0
+!      HHG_simple_v(i)=(HHG_simple_v(i)+HHG_simple_v(nt_hhg-i))/2.D0
+!    ENDIF
+!  ENDDO
+
+! do i=1,nt_hhg/2
  !do i=1,2048
   !
-             temp_omega  = (i-1) * domega/freq 
+!             temp_omega  = (i-1) * domega/freq 
 !JN  	   call simpson(npos,delr,proj_HHG(i,:),HHG(i))  !!! ATTENTION: Il faut replacer les elements du vecteur-resultat des FT s
   !	    	Écriture  du spectre `HHG` (version longue et version simplifiée) dans un fichier.
- 	  write(1010,*)temp_omega ,HHG(i),HHG_simple_v(i)
-  enddo
+! 	  write(1010,*)temp_omega ,HHG(i),HHG_simple_v(i)
+!  enddo
   close(1010)
 
 

@@ -1,0 +1,6 @@
+make: *** No targets specified and no makefile found.  Stop.
+/var/spool/slurmd/job10330531/slurm_script: line 6: /home/jnicolas/projects/def-fdion/DDQ/DDQ_HHG_pull_2003-08-07/wp_DDQ_HHG_v01: Permission denied
+
+real	0m0.001s
+user	0m0.000s
+sys	0m0.001s
